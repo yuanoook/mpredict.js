@@ -72,7 +72,7 @@
             var keepLastPointAndStartANewTrace = distanceBetweenNewAndFirst < distanceBetweenLastAndFirst;
 
             if (keepLastPointAndStartANewTrace) {
-                trace = [trace[trace.length-1]];
+                trace = [traceLastPoint];
             }
         }
 
