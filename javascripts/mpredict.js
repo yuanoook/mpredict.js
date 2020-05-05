@@ -1,20 +1,7 @@
-/**
- * Created by J-Miao on 5/29/16.
- */
+// Forked from https://github.com/cudbg/mpredict.js
+// Rewrite by Rango Yuan for learning purpose
 
-(function (root, factory) {
-    if (typeof exports === 'object') {
-        // CommonJS
-        factory(exports);
-    } else if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
-        define(['exports'], factory);
-    } else {
-        // Browser globals
-        factory(root);
-    }
-} (this, function (exports) {
-    //Default config/variables
+(function () {
     var VERSION = '1.1.5';
     var _templates;
     var _curTrace = [];
@@ -26,8 +13,12 @@
         targetElement: 'document'
     };
 
-    function _calcDist(x1, y1, x2, y2) {
+    function _calcDistance(x1, y1, x2, y2) {
         return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+    }
+
+    function _calcDistanceBetween(point1, point2) {
+        return _calcDistance(point1[0], point1[1], point2[0], point2[1]);
     }
 
     function _dotProduct(v1, v2) {
@@ -41,25 +32,11 @@
      * @method _project
      */
     function _project(v1, v2) {
-        var v2Len = _calcDist(v2[0], v2[1], 0, 0);
-        if (v2Len < 1e-8) {
-            return null;
-        }
+        var v2Len = _calcDistance(v2[0], v2[1], 0, 0);
+        if (v2Len < 1e-8) return null;
+
         var r = _dotProduct(v1, v2) / (v2Len * v2Len);
         return [r * v2[0], r * v2[1]]
-    }
-
-    /**
-     * Calculaye the perpendicular from p to vector v
-     *
-     * @api private
-     * @method _perpendicular
-     */
-    function _perpendicular(p, v) {
-        var v2p = [p[0] - v[0], p[1] - v[1]];
-        var vLen = _calcDist(v[0], v[1], 0, 0);
-        var r = _dotProduct(v2p, v) / (vLen * vLen);
-        return [r * v[0], r * v[1]];
     }
 
     /**
@@ -75,31 +52,41 @@
      * @api private
      * @method _addPoint
      */
-    function _addPoint(point, trace) {
-
-        if (trace.length > 0 && (point[2] < trace[trace.length-1][2]
-            || point[2] > trace[trace.length-1][2] + _options.pauseThreshold)) {
-            trace = [];
-        }
+    function _addPoint(newPoint, trace) {
+        // reset trace if it's needed
         if (trace.length > 0) {
-            var dist0 = _calcDist(trace[0][0], trace[0][1], trace[trace.length-1][0], trace[trace.length-1][1]);
-            var dist1 = _calcDist(trace[0][0], trace[0][1], point[0], point[1]);
-            if (dist0 > dist1) {
+            var newPointTimeStamp = newPoint[2]
+            var lastPointTimeStamp = trace[trace.length-1][2]
+            var isNotNew = newPointTimeStamp < lastPointTimeStamp
+            var isTooNew = newPointTimeStamp > lastPointTimeStamp + _options.pauseThreshold
+            if (isNotNew || isTooNew) {
+                trace = [];
+            }
+        }
+
+        if (trace.length > 0) {
+            var traceFirstPoint = trace[0]
+            var traceLastPoint = trace[trace.length-1]
+            var distanceBetweenLastAndFirst = _calcDistanceBetween(traceFirstPoint, traceLastPoint);
+            var distanceBetweenNewAndFirst = _calcDistanceBetween(traceFirstPoint, newPoint);
+            var keepLastPointAndStartANewTrace = distanceBetweenNewAndFirst < distanceBetweenLastAndFirst;
+
+            if (keepLastPointAndStartANewTrace) {
                 trace = [trace[trace.length-1]];
             }
         }
 
         if (trace.length === 0 || _options.sampleInterval === 0) {
-            trace.push(point);
+            trace.push(newPoint);
         }
         else {
             var l = trace.length;
-            var timeDiff = point[2] - trace[l-1][2], rate = _options.sampleInterval / timeDiff;
+            var timeDiff = newPoint[2] - trace[l-1][2], rate = _options.sampleInterval / timeDiff;
             var x = trace[l-1][0], y = trace[l-1][1];
             while (timeDiff >= _options.sampleInterval) {
                 trace.push([
-                    trace[l-1][0] + rate * (point[0] - x),
-                    trace[l-1][1] + rate * (point[1] - y),
+                    trace[l-1][0] + rate * (newPoint[0] - x),
+                    trace[l-1][1] + rate * (newPoint[1] - y),
                     trace[l-1][2] + _options.sampleInterval
                 ]);
                 timeDiff -= _options.sampleInterval;
@@ -157,7 +144,7 @@
     }
 
     /**
-     * Decide whether the template is shorter than current velocity profle
+     * Decide whether the template is shorter than current velocity profile
      *
      * @api private
      * @method _getScore
@@ -257,7 +244,6 @@
             offset = 1;
         }
         var p = [cTrace[n+offset][0], cTrace[n+offset][1]];
-        //var projectedP = _perpendicular(p, constraint);
         var dist = 0.0;
         for (var i = 0; i < tempLen; i++) {
             dist += template['vp'][tempStart + i] * _options.sampleInterval;
@@ -501,7 +487,7 @@
      */
     function _predictPosition(trace, delta, option) {
         if (option && option['constraint'] && option['constraint'].length === 2) {
-            var contraintLen = _calcDist(option['constraint'][0], option['constraint'][1], 0, 0);
+            var contraintLen = _calcDistance(option['constraint'][0], option['constraint'][1], 0, 0);
             if (contraintLen < 1e-8) {
                 return null;
             }
@@ -644,6 +630,6 @@
         checkLoaded();
     };
 
-    exports.mPredict = mPredict;
+    window.mPredict = mPredict;
     return mPredict;
-}));
+})()
