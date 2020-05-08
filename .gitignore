@@ -3,3 +3,4 @@ node_modules
 .vscode
 MNIST
 *.model
+package-lock.json
