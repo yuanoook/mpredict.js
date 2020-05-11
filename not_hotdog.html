@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotdog, or Not Hotdog</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0-rc.3/dist/tf.min.js"></script>
+</head>
+<body>
+  <img src="./notebooks/not_hotdog/cat.jpg" id="cat"/>
+  <img src="./notebooks/not_hotdog/hotdog.jpg" id="hotdog"/>
+  <script>
+    (async() => {
+      const model = await tf.loadLayersModel('./notebooks/not_hotdog/model.json');
+      const example = tf.fromPixels(hotdog);  // for example
+      const prediction = model.predict(example);
+      console.log(prediction);
+    })();
+  </script>
+</body>
+</html>
