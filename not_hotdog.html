@@ -4,18 +4,40 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hotdog, or Not Hotdog</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0-rc.3/dist/tf.min.js"></script>
+  <style>
+    img {
+      max-width: 100px;
+      max-height: 100px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.2/dist/tf.js"></script>
 </head>
 <body>
   <img src="./notebooks/not_hotdog/cat.jpg" id="cat"/>
   <img src="./notebooks/not_hotdog/hotdog.jpg" id="hotdog"/>
+
+  <img src="./notebooks/not_hotdog/test/1001.png" id="test_hotdog_1"/>
+  <img src="./notebooks/not_hotdog/test/1005.png" id="test_hotdog_2"/>
+
+  <img src="./notebooks/not_hotdog/test/1003.png" id="test_banana_1"/>
+  <img src="./notebooks/not_hotdog/test/1006.png" id="test_banana_2"/>
   <script>
-    (async() => {
-      const model = await tf.loadLayersModel('./notebooks/not_hotdog/model.json');
-      const example = tf.fromPixels(hotdog);  // for example
-      const prediction = model.predict(example);
-      console.log(prediction);
-    })();
+    (async(imgElement) => {
+      const IMAGE_SIZE = 256
+      const model = await tf.loadLayersModel('./notebooks/not_hotdog/model.json', {strict: false});
+      const img = tf.browser.fromPixels(imgElement)
+        .resizeNearestNeighbor([IMAGE_SIZE, IMAGE_SIZE])
+        .toFloat();
+
+      const reshaped = img.div(tf.scalar(255))
+        .expandDims();
+
+      const prediction = model.predict(reshaped);
+      const values = await prediction.data();
+
+      // Have no idea what's wrong here
+      console.log(values[0]);
+    })(test_banana_2);
   </script>
 </body>
 </html>
