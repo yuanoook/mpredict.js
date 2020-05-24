@@ -1,0 +1,82 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Plant vs Empty Pot Classifier</title>
+  </head>
+  <body>
+    <main>
+      <h1>Plant vs Empty Pot Classifier</h1>
+      <p>Built by Eric & Rango in a day on 24th May 2020</p>
+      <div id="loader">
+        <h1>Loading...</h1>
+        <p>Loading trained model...</p>
+      </div>
+      <div id="classifier" style="display: none;">
+        <label style="cursor: pointer;">
+          <img id="predict-img" src="./tfjs_binary_classifier/pot.jpg" style="display: none;" /><br/>
+          <div id="predict-canvas-container" style="display: inline;"></div><br/>
+          <input id="my-file-selector" type="file" accept="image/jpeg, image/png"  style="cursor: pointer;">
+        </label>
+        <br/>
+        <h2 id="predict_msg" style="font-style: italic; color: red;"></h2>
+      </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+    <script>
+      (() => {
+        var model = undefined;
+        const classifierElement = document.getElementById('classifier');
+        const loaderElement = document.getElementById('loader');
+        const fileSelector = document.getElementById('my-file-selector');
+        const imageElement = document.getElementById('predict-img');
+        const canvasContainer = document.getElementById('predict-canvas-container');
+
+        async function initialize() {
+            model = await tf.loadLayersModel('tfjs_binary_classifier/model.json');
+            classifierElement.style.display = 'block';
+            loaderElement.style.display = 'none';
+
+            fileSelector.addEventListener('change', () => {
+              const uploadedImage = document.getElementById('my-file-selector').files[0];
+              imageElement.src = URL.createObjectURL(uploadedImage);
+            })
+
+            imageElement.addEventListener('load', predict);
+            setTimeout(predict, 500);
+        }
+
+        function cropSquare(src){
+          const diameter = Math.floor(Math.min(src.naturalWidth, src.naturalHeight) * 0.49)
+          const width = diameter * 2
+          let canvas = document.createElement("canvas");
+          canvas.width  = canvas.height = diameter
+          canvas.getContext("2d").drawImage(
+            src,
+            Math.floor(src.naturalWidth / 2 - diameter),
+            Math.floor(src.naturalHeight / 2 - diameter),
+            width, width,
+            0, 0,
+            diameter, diameter
+          );
+          canvasContainer.innerHTML = '';
+          canvasContainer.appendChild(canvas);
+          return canvas;
+        }
+
+        async function predict () {
+          const canvas = cropSquare(imageElement);
+          const tensorImg = tf.browser.fromPixels(canvas).resizeNearestNeighbor([36, 36]).toFloat().expandDims();
+          prediction = await model.predict(tensorImg).data();
+          console.log(prediction)
+          displayMsg(`You uploaded ${prediction[0] > 0 ? "a plant" : "an empty pot" }!`);
+        }
+
+        function displayMsg(msg) {
+          document.getElementById('predict_msg').innerText = msg
+        }
+
+        initialize();
+      })();
+    </script>
+  </body>
+</html>
